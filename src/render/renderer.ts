@@ -384,6 +384,9 @@ export class Renderer {
           if (ev.school === 'physical') this.vfx.meleeSpark(ev.targetId, ev.crit);
         }
         break;
+      case 'kiBlastFired':
+        if (ev.targetId) this.vfx.projectile(ev.sourceId, ev.targetId, 'ki');
+        break;
       case 'heal2':
         if (ev.amount > 0 || ev.crit) this.vfx.healGlow(ev.targetId);
         break;

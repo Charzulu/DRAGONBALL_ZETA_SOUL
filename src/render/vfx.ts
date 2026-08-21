@@ -97,6 +97,7 @@ export const SCHOOL_COLORS: Record<string, number> = {
   // warm steel-spark — near-white crossed the bloom threshold colorlessly and
   // melee hits read as faint white noise
   physical: 0xffd28a,
+  ki: 0xffff00,
 };
 
 interface Projectile {
@@ -115,6 +116,8 @@ interface Projectile {
 function projectileSprites(school: string): { core: number; trail: number } {
   return school === 'fire'
     ? { core: SPR.firePuff, trail: SPR.flame }
+    : school === 'ki'
+    ? { core: SPR.glowCore, trail: SPR.star }
     : { core: SPR.glowCore, trail: SPR.sparkle };
 }
 

@@ -16,7 +16,7 @@ export type PlayerClass =
 export const ALL_CLASSES: PlayerClass[] = [
   'warrior', 'paladin', 'hunter', 'rogue', 'priest', 'shaman', 'mage', 'warlock', 'druid',
 ];
-export type ResourceType = 'rage' | 'mana' | 'energy';
+export type ResourceType = 'ki' | 'energy';
 
 export interface Vec3 {
   x: number;
@@ -379,8 +379,13 @@ export interface Entity {
   hp: number;
   maxHp: number;
   resource: number;
-  maxResource: number;
-  resourceType: ResourceType | null;
+  ki: number;
+  maxKi: number;
+  bp: number;
+  energy: number;
+  maxEnergy: number;
+
+
   stats: Stats;
   weapon: WeaponInfo;
   attackPower: number;
@@ -391,6 +396,8 @@ export interface Entity {
   hostile: boolean;
   // combat
   targetId: number | null;
+  kiPrimed: boolean;
+  kiChargeStartTime: number;
   autoAttack: boolean;
   swingTimer: number;
   inCombat: boolean;
@@ -499,6 +506,7 @@ export type SimEvent = { pid?: number } & (
   // entityId (when set) anchors the log to that entity so the server only
   // delivers it to nearby players; anchorless logs broadcast server-wide
   | { type: 'log'; text: string; color?: string; entityId?: number }
+  | { type: 'kiBlastFired'; sourceId: number; targetId: number | null; chargePct: number; }
 );
 
 export interface MoveInput {
@@ -509,6 +517,7 @@ export interface MoveInput {
   strafeLeft: boolean;
   strafeRight: boolean;
   jump: boolean;
+  fireKiBlast?: boolean;
 }
 
 export interface SimConfig {
@@ -611,4 +620,11 @@ export function meleeMissChance(attackerLevel: number, targetLevel: number): num
 export function armorReduction(armor: number, attackerLevel: number): number {
   const a = Math.max(0, armor);
   return Math.min(0.75, a / (a + 85 * attackerLevel + 400));
+}
+
+export interface KiBlastFiredEvent {
+  type: 'kiBlastFired';
+  sourceId: number;
+  targetId: number | null;
+  chargePct: number;
 }

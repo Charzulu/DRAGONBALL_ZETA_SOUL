@@ -37,7 +37,7 @@ export const CLASSES: Record<PlayerClass, ClassDef> = {
     resourceType: 'rage',
     startWeapon: 'worn_sword',
     startChest: 'recruit_tunic',
-    abilities: ['heroic_strike', 'battle_shout', 'charge', 'rend', 'thunder_clap', 'hamstring', 'bloodrage', 'overpower', 'execute', 'slam', 'cleave', 'defensive_stance', 'sunder_armor', 'taunt'],
+    abilities: ['heroic_strike', 'battle_shout', 'charge', 'rend', 'thunder_clap', 'hamstring', 'bloodrage', 'overpower', 'execute', 'slam', 'cleave', 'defensive_stance', 'sunder_armor', 'taunt', 'ki_blast_prime'],
     color: 0xc79c6e,
     crest: '⚔',
   },
@@ -1342,3 +1342,11 @@ export function abilitiesKnownAt(cls: PlayerClass, level: number): { def: Abilit
   }
   return out;
 }
+
+ABILITIES['ki_blast_prime'] = {
+    id: 'ki_blast_prime', name: 'Prime Ki Blast', class: 'warrior', learnLevel: 1,
+    icon: 'spell_holy_holybolt',
+    ranks: [{ rank: 1, level: 1, cost: 0, effects: [] }],
+    castTime: 0, gcd: false, range: 0,
+    description: 'Primes a Ki Blast. Once primed, Right Click to fire. Charge time determines power.'
+};

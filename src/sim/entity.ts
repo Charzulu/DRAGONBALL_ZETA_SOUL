@@ -6,11 +6,11 @@ function baseEntity(id: number, pos: Vec3): Entity {
     id, kind: 'mob', templateId: '', name: '', level: 1,
     pos: { ...pos }, prevPos: { ...pos }, facing: 0, prevFacing: 0,
     vy: 0, onGround: true, fallStartY: pos.y,
-    hp: 1, maxHp: 1, resource: 0, maxResource: 0, resourceType: null,
+    hp: 1, maxHp: 1, ki: 100, maxKi: 100, energy: 100, maxEnergy: 100, bp: 20, resource: 0, maxResource: 0,
     stats: { str: 0, agi: 0, sta: 0, int: 0, spi: 0, armor: 0 },
     weapon: { min: 1, max: 2, speed: 2 },
     attackPower: 0, rangedPower: 0, critChance: 0.05, dodgeChance: 0.05, moveSpeed: 7, hostile: false,
-    targetId: null, autoAttack: false, swingTimer: 0,
+    targetId: null, autoAttack: false, swingTimer: 0, kiPrimed: false, kiChargeStartTime: 0,
     inCombat: false, combatTimer: 99,
     auras: [], castingAbility: null, castRemaining: 0, castTotal: 0,
     channeling: false, channelTickTimer: 0, channelTickEvery: 0,
@@ -34,7 +34,7 @@ export function createPlayer(id: number, cls: PlayerClass, pos: Vec3, name: stri
   e.templateId = cls;
   e.name = name;
   e.level = 1;
-  e.resourceType = def.resourceType;
+
   e.color = def.color;
   return e;
 }
@@ -120,28 +120,7 @@ export function recalcPlayerStats(e: Entity, cls: PlayerClass, equipment: Player
   e.hp = Math.max(1, Math.round(e.maxHp * hpFrac));
   if (e.dead) e.hp = 0;
 
-  // Druid forms swap the resource bar, classic-style: bear runs on rage
-  // (starts empty, fills from combat), cat on energy (starts full — friendlier
-  // than vanilla's 0). Mana is parked in savedMana and restored on shift-out.
-  const formResource: 'rage' | 'energy' | null = bearForm ? 'rage' : catForm ? 'energy' : null;
-  if (formResource) {
-    if (e.resourceType === 'mana') e.savedMana = e.resource;
-    if (e.resourceType !== formResource) e.resource = formResource === 'energy' ? 100 : 0;
-    e.resourceType = formResource;
-    e.maxResource = 100;
-  } else if (def.resourceType === 'mana') {
-    const cameFromForm = e.resourceType !== 'mana';
-    const manaFrac = e.maxResource > 0 ? e.resource / e.maxResource : 1;
-    e.resourceType = 'mana';
-    e.maxResource = def.baseMana + def.manaPerLevel * (lvl - 1) + manaFromIntellect(s.int);
-    e.resource = cameFromForm
-      ? Math.min(e.savedMana, e.maxResource)
-      : Math.round(e.maxResource * manaFrac);
-  } else {
-    e.resourceType = def.resourceType;
-    e.maxResource = 100; // rage and energy both cap at 100
-    e.resource = Math.min(e.resource, 100);
-  }
+
 }
 
 export function createMob(id: number, template: MobTemplate, level: number, pos: Vec3): Entity {
