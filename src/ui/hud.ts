@@ -461,7 +461,15 @@ export class Hud {
       $('#tf-name').textContent = target.name;
       $('#tf-level').textContent = MOBS[target.templateId]?.boss ? '☠' : String(target.level);
       ($('#tf-hp') as HTMLElement).style.transform = `scaleX(${target.hp / Math.max(1, target.maxHp)})`;
-      $('#tf-hp-text').textContent = target.dead ? 'Dead' : `${target.hp} / ${target.maxHp}`;
+
+      // Scouter display logic
+      const hasScouter = p.equipment?.head === 'scouter' || p.equipment?.mainhand === 'scouter'; // For testing, assume everyone has a scouter for the UI right now
+      if (hasScouter) {
+        $('#tf-hp-text').textContent = target.dead ? 'Dead' : `BP: ${target.bp || (target.level * 15)}`;
+      } else {
+        $('#tf-hp-text').textContent = target.dead ? 'Dead' : `??? / ???`;
+      }
+
       ($('#tf-name') as HTMLElement).style.color = target.hostile ? '#ff6b5e' : '#9fdc7f';
       if (this.lastPortraitTarget !== target.id) {
         this.lastPortraitTarget = target.id;
@@ -733,6 +741,30 @@ export class Hud {
       const dz = -(e.pos.z - p.pos.z) * pxPerYard;
       const mx = S / 2 + dx, my = S / 2 + dz;
       if ((mx - S / 2) ** 2 + (my - S / 2) ** 2 > (S / 2 - 7) ** 2) continue;
+
+      // Draw BP Sense Blobs if no scouter
+      const hasScouter = p.equipment?.head === 'scouter' || p.equipment?.mainhand === 'scouter';
+      if (!hasScouter && e.kind !== 'object' && e.hp > 0) {
+         const bpDiff = (e.bp || 20) - (p.bp || 20);
+         const radius = Math.max(3, Math.min(15, 6 + (bpDiff * 0.1)));
+         const grad = ctx.createRadialGradient(mx, my, 0, mx, my, radius);
+         if (bpDiff > 100) {
+             grad.addColorStop(0, 'rgba(255, 0, 0, 0.8)');
+             grad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+         } else if (bpDiff > 20) {
+             grad.addColorStop(0, 'rgba(255, 100, 0, 0.6)');
+             grad.addColorStop(1, 'rgba(255, 100, 0, 0)');
+         } else {
+             grad.addColorStop(0, 'rgba(100, 200, 255, 0.4)');
+             grad.addColorStop(1, 'rgba(100, 200, 255, 0)');
+         }
+         ctx.fillStyle = grad;
+         ctx.beginPath();
+         ctx.arc(mx, my, radius, 0, Math.PI * 2);
+         ctx.fill();
+         continue; // Draw blob instead of normal blip
+      }
+
       if (e.kind === 'npc') {
         const hasAvail = e.questIds.some((q) => QUESTS[q].giverNpcId === e.templateId && this.sim.questState(q) === 'available');
         const hasReady = e.questIds.some((q) => QUESTS[q].turnInNpcId === e.templateId && this.sim.questState(q) === 'ready');

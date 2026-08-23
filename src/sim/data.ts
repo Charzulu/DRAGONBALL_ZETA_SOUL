@@ -35,6 +35,9 @@ export type {
 // ---------------------------------------------------------------------------
 
 export const ITEMS: Record<string, ItemDef> = {
+
+  scouter: { id: 'scouter', name: 'Scouter', type: 'head', quality: 'uncommon', level: 1, maxCount: 1, reqLevel: 1, icon: 'inv_helmet_47', armor: 0, sellPrice: 0 },
+
   ...BASE_ITEMS, ...ZONE2_ITEMS, ...ZONE3_ITEMS,
 };
 

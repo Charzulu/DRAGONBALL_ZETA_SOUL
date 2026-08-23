@@ -341,14 +341,8 @@ function updatePreviewContainer(panelId: string): void {
   if (container) {
     characterPreview.setContainer(container);
     
-    const selSelector = panelId === '#charselect-panel' 
-      ? '#charselect-panel .mini-class.sel' 
-      : '#offline-select .mini-class.sel';
-    const selEl = document.querySelector(selSelector) as HTMLElement | null;
-    if (selEl) {
-      const cls = selEl.dataset.class as PlayerClass;
-      characterPreview.setClass(cls);
-    }
+    const cls = 'warrior';
+    characterPreview.setClass(cls);
   }
 }
 
@@ -633,10 +627,7 @@ async function refreshCharacters(): Promise<void> {
         });
         
         // Deselect class creator chips
-        document.querySelectorAll('#charselect-panel .mini-class').forEach((x) => {
-          x.classList.remove('sel');
-          x.setAttribute('aria-pressed', 'false');
-        });
+
         
         row.classList.add('sel');
         row.setAttribute('aria-selected', 'true');
@@ -1041,19 +1032,6 @@ function wireStartScreens(): void {
 
   const handleOfflineSelect = () => {
     show('#offline-select');
-    
-    // Select warrior by default and render details
-    const warriorCard = document.querySelector('#offline-select .mini-class[data-class="warrior"]') as HTMLElement | null;
-    if (warriorCard) {
-      document.querySelectorAll('#offline-select .mini-class').forEach((c) => {
-        c.classList.remove('sel');
-        c.setAttribute('aria-pressed', 'false');
-      });
-      warriorCard.classList.add('sel');
-      warriorCard.setAttribute('aria-pressed', 'true');
-      renderClassDetails('offline-class-details', 'warrior');
-      btnStartOffline.removeAttribute('disabled');
-    }
   };
 
   onlineBtn.addEventListener('click', handleOnlineSelect);
@@ -1063,106 +1041,8 @@ function wireStartScreens(): void {
   offlineBtn.addEventListener('keydown', (e) => handleKeyboardActivation(e as KeyboardEvent, handleOfflineSelect));
 
   btnStartOffline.addEventListener('click', () => {
-    const selCard = document.querySelector('#offline-select .mini-class.sel') as HTMLElement | null;
-    if (selCard) {
-      handleOfflineStart(selCard.dataset.class as PlayerClass);
-    } else {
-      offlineError.textContent = 'Please select a class.';
-    }
-  });
-
-  // offline class chips
-  document.querySelectorAll('#offline-select .mini-class').forEach((card) => {
-    const handleClassSelect = () => {
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-        revertTimeouts['offline-class-details'] = null;
-      }
-      document.querySelectorAll('#offline-select .mini-class').forEach((c) => {
-        c.classList.remove('sel');
-        c.setAttribute('aria-pressed', 'false');
-      });
-      card.classList.add('sel');
-      card.setAttribute('aria-pressed', 'true');
-      
-      const cls = (card as HTMLElement).dataset.class as PlayerClass;
-      renderClassDetails('offline-class-details', cls);
-      btnStartOffline.removeAttribute('disabled');
-    };
-    card.addEventListener('click', handleClassSelect);
-    card.addEventListener('keydown', (e) => handleKeyboardActivation(e as KeyboardEvent, handleClassSelect));
-    
-    // A11y focus updates details
-    card.addEventListener('focus', () => {
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-        revertTimeouts['offline-class-details'] = null;
-      }
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      const cls = (card as HTMLElement).dataset.class as PlayerClass;
-      renderClassDetails('offline-class-details', cls);
-    });
-
-    // Hover updates details with 50ms debounce
-    card.addEventListener('mouseenter', () => {
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-        revertTimeouts['offline-class-details'] = null;
-      }
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-      }
-      const cls = (card as HTMLElement).dataset.class as PlayerClass;
-      hoverTimeouts['offline-class-details'] = window.setTimeout(() => {
-        renderClassDetails('offline-class-details', cls);
-        hoverTimeouts['offline-class-details'] = null;
-      }, 50);
-    });
-
-    // Mouseleave reverts to currently selected class details with a 100ms debounce
-    card.addEventListener('mouseleave', () => {
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-      }
-      revertTimeouts['offline-class-details'] = window.setTimeout(() => {
-        const selCard = document.querySelector('#offline-select .mini-class.sel') as HTMLElement | null;
-        if (selCard) {
-          const cls = selCard.dataset.class as PlayerClass;
-          renderClassDetails('offline-class-details', cls);
-        }
-        revertTimeouts['offline-class-details'] = null;
-      }, 100);
-    });
-
-    // Blur reverts to currently selected class details with a 100ms debounce (matches mouseleave)
-    card.addEventListener('blur', () => {
-      if (hoverTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['offline-class-details']);
-        hoverTimeouts['offline-class-details'] = null;
-      }
-      if (revertTimeouts['offline-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['offline-class-details']);
-      }
-      revertTimeouts['offline-class-details'] = window.setTimeout(() => {
-        const selCard = document.querySelector('#offline-select .mini-class.sel') as HTMLElement | null;
-        if (selCard) {
-          const cls = selCard.dataset.class as PlayerClass;
-          renderClassDetails('offline-class-details', cls);
-        }
-        revertTimeouts['offline-class-details'] = null;
-      }, 100);
-    });
+    const name = offlineNameInput.value.trim();
+    startOffline('warrior', name);
   });
 
   const offlineBackBtn = $('#btn-offline-back');
@@ -1265,126 +1145,12 @@ function wireStartScreens(): void {
   $('#btn-realm-back').addEventListener('click', () => show('#mode-select'));
   $('#btn-change-realm').addEventListener('click', () => showRealmList());
 
+
   // character creation
-  document.querySelectorAll('#charselect-panel .mini-class').forEach((el) => {
-    const handleMiniClassSelect = () => {
-      if (hoverTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['online-class-details']);
-        hoverTimeouts['online-class-details'] = null;
-      }
-      if (revertTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['online-class-details']);
-        revertTimeouts['online-class-details'] = null;
-      }
-      document.querySelectorAll('#charselect-panel .mini-class').forEach((x) => {
-        x.classList.remove('sel');
-        x.setAttribute('aria-pressed', 'false');
-      });
-      document.querySelectorAll('#char-list .char-row').forEach((r) => {
-        r.classList.remove('sel');
-        r.setAttribute('aria-selected', 'false');
-      });
-      el.classList.add('sel');
-      el.setAttribute('aria-pressed', 'true');
-      
-      const cls = (el as HTMLElement).dataset.class as PlayerClass;
-      renderClassDetails('online-class-details', cls);
-    };
-    el.addEventListener('click', handleMiniClassSelect);
-    el.addEventListener('keydown', (e) => handleKeyboardActivation(e as KeyboardEvent, handleMiniClassSelect));
-    
-    // A11y focus updates details
-    el.addEventListener('focus', () => {
-      if (revertTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['online-class-details']);
-        revertTimeouts['online-class-details'] = null;
-      }
-      if (hoverTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['online-class-details']);
-        hoverTimeouts['online-class-details'] = null;
-      }
-      document.querySelectorAll('#char-list .char-row').forEach((r) => {
-        r.classList.remove('sel');
-        r.setAttribute('aria-selected', 'false');
-      });
-      const cls = (el as HTMLElement).dataset.class as PlayerClass;
-      renderClassDetails('online-class-details', cls);
-    });
-
-    // Hover updates details with 50ms debounce
-    el.addEventListener('mouseenter', () => {
-      if (revertTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['online-class-details']);
-        revertTimeouts['online-class-details'] = null;
-      }
-      if (hoverTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['online-class-details']);
-      }
-      const cls = (el as HTMLElement).dataset.class as PlayerClass;
-      hoverTimeouts['online-class-details'] = window.setTimeout(() => {
-        renderClassDetails('online-class-details', cls);
-        hoverTimeouts['online-class-details'] = null;
-      }, 50);
-    });
-
-    // Mouseleave reverts to currently selected class details with a 100ms debounce
-    el.addEventListener('mouseleave', () => {
-      if (hoverTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['online-class-details']);
-        hoverTimeouts['online-class-details'] = null;
-      }
-      if (revertTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['online-class-details']);
-      }
-      revertTimeouts['online-class-details'] = window.setTimeout(() => {
-        const selEl = document.querySelector('#charselect-panel .mini-class.sel') as HTMLElement | null;
-        if (selEl) {
-          const cls = selEl.dataset.class as PlayerClass;
-          renderClassDetails('online-class-details', cls);
-        } else {
-          const selChar = document.querySelector('#char-list .char-row.sel') as HTMLElement | null;
-          if (selChar) {
-            const cls = selChar.dataset.class as PlayerClass;
-            renderClassDetails('online-class-details', cls);
-          }
-        }
-        revertTimeouts['online-class-details'] = null;
-      }, 100);
-    });
-
-    // Blur reverts to currently selected class details with a 100ms debounce (matches mouseleave)
-    el.addEventListener('blur', () => {
-      if (hoverTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(hoverTimeouts['online-class-details']);
-        hoverTimeouts['online-class-details'] = null;
-      }
-      if (revertTimeouts['online-class-details'] !== null) {
-        window.clearTimeout(revertTimeouts['online-class-details']);
-      }
-      revertTimeouts['online-class-details'] = window.setTimeout(() => {
-        const selEl = document.querySelector('#charselect-panel .mini-class.sel') as HTMLElement | null;
-        if (selEl) {
-          const cls = selEl.dataset.class as PlayerClass;
-          renderClassDetails('online-class-details', cls);
-        } else {
-          const selChar = document.querySelector('#char-list .char-row.sel') as HTMLElement | null;
-          if (selChar) {
-            const cls = selChar.dataset.class as PlayerClass;
-            renderClassDetails('online-class-details', cls);
-          }
-        }
-        revertTimeouts['online-class-details'] = null;
-      }, 100);
-    });
-  });
+  const handleMiniClassSelect = () => {};
 
   // Default select warrior in online character creator
-  const defaultOnlineClass = document.querySelector('#charselect-panel .mini-class[data-class="warrior"]') as HTMLElement | null;
-  if (defaultOnlineClass) {
-    defaultOnlineClass.classList.add('sel');
-    defaultOnlineClass.setAttribute('aria-pressed', 'true');
-    renderClassDetails('online-class-details', 'warrior');
-  }
+
   const newCharNameInput = $('#new-char-name') as HTMLInputElement;
   const charselectError = $('#charselect-error');
 
@@ -1413,7 +1179,7 @@ function wireStartScreens(): void {
 
   $('#btn-create-char').addEventListener('click', async () => {
     const name = newCharNameInput.value.trim();
-    const clsEl = document.querySelector('#charselect-panel .mini-class.sel') as HTMLElement | null;
+    const clsEl = { dataset: { class: 'warrior' } }; // Force default class
     loginError('');
     charselectError.textContent = '';
     
@@ -1431,7 +1197,7 @@ function wireStartScreens(): void {
       newCharNameInput.focus();
       return;
     }
-    if (!clsEl) { charselectError.textContent = 'Pick a class.'; return; }
+
 
     newCharNameInput.classList.remove('user-invalid-fallback');
     newCharNameInput.removeAttribute('aria-invalid');
@@ -1519,11 +1285,7 @@ function wireStartScreens(): void {
     const canvas = $('#char-preview-canvas') as HTMLCanvasElement | null;
     if (container && canvas) {
       characterPreview = new CharacterPreview(container, canvas);
-      const selSelector = activePanelId === '#offline-select'
-        ? '#offline-select .mini-class.sel'
-        : '#charselect-panel .mini-class.sel';
-      const selEl = document.querySelector(selSelector) as HTMLElement | null;
-      const cls = selEl ? (selEl.dataset.class as PlayerClass) : 'warrior';
+      const cls = 'warrior';
       characterPreview.setClass(cls);
     }
   });

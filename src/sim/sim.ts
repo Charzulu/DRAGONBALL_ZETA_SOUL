@@ -141,7 +141,7 @@ export interface CharacterState {
   xp: number;
   copper: number;
   hp: number;
-  resource: number;
+  ki: number; energy: number;
   pos: { x: number; z: number };
   facing: number;
   equipment: PlayerEquipment;
@@ -176,17 +176,55 @@ function freshCounters(): RewardCounters {
 
 // Shapeshifts stay castable while shapeshifted (that's how you shift out).
 function isFormToggle(ability: AbilityDef): boolean {
-  return ability.effects.some((e) => e.type === 'selfBuff' && (e.kind === 'form_bear' || e.kind === 'form_cat'));
+  return (ability.effects || []).some((e) => e.type === 'selfBuff' && (e.kind === 'form_bear' || e.kind === 'form_cat'));
 }
 
 // Forms, stances and stealth are toggles: re-casting cancels the aura, and
 // cancelling is never gated by cost or cooldown (the cooldown gates re-entry).
 function isToggleBuff(ability: AbilityDef): boolean {
-  return ability.effects.some((e) => e.type === 'selfBuff'
+  return (ability.effects || []).some((e) => e.type === 'selfBuff'
     && (e.kind === 'form_bear' || e.kind === 'form_cat' || e.kind === 'defensive_stance' || e.kind === 'stealth'));
 }
 
 export class Sim {
+  fireKiBlast() {
+    const p = this.player;
+    if (!p.kiPrimed) return;
+
+    const chargeTime = this.time - p.kiChargeStartTime;
+    // 7 seconds = 100%
+    const chargePct = Math.min(100, (chargeTime / 7.0) * 100);
+
+    this.emit({
+      type: 'kiBlastFired',
+      sourceId: p.id,
+      targetId: p.targetId,
+      chargePct: chargePct
+    });
+
+    // Reset prime
+    p.kiPrimed = false;
+    p.kiChargeStartTime = 0;
+
+    // Apply damage and effects based on charge tier
+    // 0-10%: single small blast, 0.08s cooldown (handled via kiBlast logic in game)
+    // 11-40%: burst firing, longer cooldowns
+    // 41-69%: medium ki blast
+    // 70-100%: fully charged blast
+
+    let baseDmg = 10;
+    if (chargePct > 70) baseDmg = 100;
+    else if (chargePct > 40) baseDmg = 50;
+    else if (chargePct > 10) baseDmg = 25;
+
+    if (p.targetId) {
+      const target = this.entities.get(p.targetId);
+      if (target && target.hp > 0 && target.hostile) {
+        this.dealDamage(p.id, target.id, baseDmg, false, 'ki', 'ki_blast');
+      }
+    }
+  }
+
   cfg: Required<Omit<SimConfig, 'noPlayer'>>;
   rng: Rng;
   time = 0;
@@ -356,13 +394,12 @@ export class Sim {
     recalcPlayerStats(player, cls, meta.equipment);
     if (opts?.state) {
       player.hp = Math.max(1, Math.min(player.maxHp, opts.state.hp));
-      player.resource = classDef.resourceType === 'mana'
-        ? Math.min(player.maxResource, Math.max(0, opts.state.resource))
-        : classDef.resourceType === 'energy' ? 100 : 0;
+      player.ki = 100;
+      player.energy = 100;
     } else {
       player.hp = player.maxHp;
-      player.resource = classDef.resourceType === 'mana' ? player.maxResource
-        : classDef.resourceType === 'energy' ? 100 : 0;
+      player.ki = 100;
+      player.energy = 100;
     }
     player.swingTimer = 0;
     return player.id;
@@ -415,7 +452,8 @@ export class Sim {
       xp: meta.xp,
       copper: meta.copper,
       hp: e.hp,
-      resource: e.resource,
+      ki: e.ki,
+      energy: e.energy,
       pos: { x: e.pos.x, z: e.pos.z },
       facing: e.facing,
       equipment: { ...meta.equipment },
@@ -558,7 +596,7 @@ export class Sim {
     r.e.level = Math.max(1, Math.min(MAX_LEVEL, level));
     recalcPlayerStats(r.e, r.meta.cls, r.meta.equipment);
     r.e.hp = r.e.maxHp;
-    if (r.e.resourceType === 'mana') r.e.resource = r.e.maxResource;
+    r.e.ki = r.e.maxKi; r.e.energy = r.e.maxEnergy;
     this.refreshKnownAbilities(r.meta, false);
   }
 
@@ -800,6 +838,10 @@ export class Sim {
       }
       return;
     }
+    if (inp.fireKiBlast) {
+      this.fireKiBlast();
+      inp.fireKiBlast = false;
+    }
     if (inp.jump && p.onGround && !this.isRooted(p)) {
       p.vy = JUMP_VELOCITY;
       p.onGround = false;
@@ -855,15 +897,11 @@ export class Sim {
 
   private updateRegen(p: Entity, meta: PlayerMeta): void {
     if (this.tickCount % 40 !== 0) return; // every 2 seconds (the classic tick)
-    if (p.resourceType === 'mana') {
-      if (p.fiveSecondRule >= 5) {
-        const regen = p.stats.spi / 4 + 2;
-        p.resource = Math.min(p.maxResource, p.resource + Math.round(regen));
-      }
-    } else if (p.resourceType === 'energy') {
-      p.resource = Math.min(p.maxResource, p.resource + 20);
-    } else if (p.resourceType === 'rage' && !p.inCombat) {
-      p.resource = Math.max(0, p.resource - 2);
+    if (p.ki < p.maxKi) {
+      p.ki = Math.min(p.maxKi, p.ki + 2);
+    }
+    if (p.energy < p.maxEnergy) {
+      p.energy = Math.min(p.maxEnergy, p.energy + 10);
     }
     if (!p.inCombat && p.hp < p.maxHp && !p.eating) {
       const regen = p.stats.sta * 0.3 + 2;
@@ -878,8 +916,8 @@ export class Sim {
         p.hp += heal;
         this.emit({ type: 'heal', targetId: p.id, amount: heal });
       }
-      if (c.manaPer2s > 0 && p.resourceType === 'mana') {
-        p.resource = Math.min(p.maxResource, p.resource + c.manaPer2s);
+      if (c.manaPer2s > 0) {
+        p.ki = Math.min(p.maxKi, p.ki + c.manaPer2s);
       }
       c.remaining -= 2;
       if (c.remaining <= 0) p[slot] = null;
@@ -1007,8 +1045,8 @@ export class Sim {
     if (p.cooldowns.has(ability.id) && !togglingOff) { this.error(p.id, 'That ability is not ready yet.'); return; }
     // shifting out of a form is free; shifting across forms bills the parked
     // mana (the live bar is rage/energy in a form) — see spendAbilityCost
-    if (p.resource < res.cost && !togglingOff && !this.formShiftKind(p, ability)) {
-      this.error(p.id, p.resourceType === 'rage' ? 'Not enough rage!' : p.resourceType === 'energy' ? 'Not enough energy!' : 'Not enough mana!');
+    if (p.ki < res.cost && !togglingOff && !this.formShiftKind(p, ability)) {
+      this.error(p.id, 'Not enough Ki!');
       return;
     }
     if (ability.requiresDodgeProc && this.time > p.overpowerUntil) {
@@ -1127,8 +1165,8 @@ export class Sim {
   }
 
   private spendResource(p: Entity, cost: number): void {
-    p.resource = Math.max(0, p.resource - cost);
-    if (p.resourceType === 'mana' && cost > 0) p.fiveSecondRule = 0;
+    p.ki = Math.max(0, p.ki - cost);
+    if (cost > 0) p.fiveSecondRule = 0;
   }
 
   /** Is this cast a form toggle while already shapeshifted? 'off' = leaving
@@ -1238,7 +1276,7 @@ export class Sim {
       const maxRange = ability.range > 0 ? ability.range : MELEE_RANGE;
       if (d > maxRange + 2) { this.error(p.id, 'Out of range.'); return; }
     }
-    if (p.resource < res.cost && !this.formShiftKind(p, ability)) { this.error(p.id, 'Not enough ' + (p.resourceType ?? 'resource') + '!'); return; }
+    if (p.ki < res.cost && !this.formShiftKind(p, ability)) { this.error(p.id, 'Not enough Ki!'); return; }
 
     // helpful spells never miss
     if (ability.targetType === 'friendly') {
@@ -1386,7 +1424,7 @@ export class Sim {
           if (p.hp <= eff.hp) { this.error(p.id, 'Not enough health.'); break; }
           p.hp -= eff.hp;
           this.emit({ type: 'damage', sourceId: p.id, targetId: p.id, amount: eff.hp, crit: false, school: 'shadow', ability: ability.name, kind: 'hit' });
-          p.resource = Math.min(p.maxResource, p.resource + eff.mana);
+          p.ki = Math.min(p.maxKi, p.ki + eff.mana);
           break;
         }
         case 'drainTick':
@@ -1532,7 +1570,7 @@ export class Sim {
           break;
         }
         case 'gainResource': {
-          p.resource = Math.min(p.maxResource, p.resource + eff.amount);
+          p.ki = Math.min(p.maxKi, p.ki + eff.amount);
           break;
         }
         case 'selfDamagePctMax': {
@@ -1548,7 +1586,7 @@ export class Sim {
           p.chargeTargetId = target.id;
           p.chargeTimeLeft = CHARGE_MAX_DURATION;
           p.chargePath = this.findChargePath(p, target);
-          if (p.resourceType === 'rage') p.resource = Math.min(p.maxResource, p.resource + 9);
+
           this.enterCombat(p, target);
           break;
         }
@@ -1770,7 +1808,7 @@ export class Sim {
       const queued = this.resolvedAbility(p.queuedOnSwing, p.id);
       if (queued) {
         const eff = queued.effects.find((e) => e.type === 'weaponDamage');
-        if (p.resource >= queued.cost && eff && eff.type === 'weaponDamage') {
+        if (p.ki >= queued.cost && eff && eff.type === 'weaponDamage') {
           this.spendResource(p, queued.cost);
           bonus = eff.bonus;
           abilityName = queued.def.name;
@@ -1922,17 +1960,11 @@ export class Sim {
     if (source && source.kind === 'player' && source.id !== target.id) {
       const meta = this.players.get(source.id);
       if (meta) meta.counters.damageDealt += amount;
-      if (source.resourceType === 'rage' && !noRage && school === 'physical' && !ability) {
-        source.resource = Math.min(source.maxResource, source.resource + rageFromDealing(amount, source.level));
-      }
-    }
+          }
     if (target.kind === 'player') {
       const meta = this.players.get(target.id);
       if (meta) meta.counters.damageTaken += amount;
-      if (target.resourceType === 'rage' && source && source.id !== target.id) {
-        target.resource = Math.min(target.maxResource, target.resource + rageFromTaking(amount, target.level));
-      }
-      if (isConsuming(target)) { target.eating = null; target.drinking = null; }
+            if (isConsuming(target)) { target.eating = null; target.drinking = null; }
       if (target.sitting) target.sitting = false;
       // vanilla spell pushback: a landed hit delays the cast rather than
       // cancelling it (misses and fully absorbed hits don't push back)
@@ -2062,7 +2094,7 @@ export class Sim {
       meta.counters.levelUps++;
       recalcPlayerStats(p, meta.cls, meta.equipment);
       p.hp = p.maxHp;
-      if (p.resourceType === 'mana') p.resource = p.maxResource;
+      p.ki = p.maxKi;
       this.emit({ type: 'levelup', level: p.level, pid: p.id });
       this.refreshKnownAbilities(meta, true);
     }
@@ -2974,7 +3006,7 @@ export class Sim {
     p.auras = [];
     recalcPlayerStats(p, meta.cls, meta.equipment);
     p.hp = p.maxHp;
-    p.resource = p.resourceType === 'mana' ? p.maxResource : p.resourceType === 'energy' ? 100 : 0;
+    p.ki = 100; p.energy = 100;
     p.targetId = null;
     p.combatTimer = 99;
     p.inCombat = false;
@@ -3655,7 +3687,7 @@ export class Sim {
         const e = this.entities.get(mPid);
         return meta && e ? [{
           pid: mPid, name: meta.name, cls: meta.cls, level: e.level,
-          hp: e.hp, mhp: e.maxHp, res: Math.round(e.resource), mres: e.maxResource, rtype: e.resourceType,
+          hp: e.hp, mhp: e.maxHp, res: Math.round(e.ki), mres: e.maxKi, rtype: 'ki', bp: e.bp,
           x: e.pos.x, z: e.pos.z, dead: e.dead ? 1 : 0,
         }] : [];
       }),

@@ -138,10 +138,10 @@ export class Input {
 
   readMoveInput(): {
     forward: boolean; back: boolean; turnLeft: boolean; turnRight: boolean;
-    strafeLeft: boolean; strafeRight: boolean; jump: boolean;
+    strafeLeft: boolean; strafeRight: boolean; jump: boolean; powerUp: boolean;
   } {
     if (this.suspendMovement) {
-      return { forward: false, back: false, turnLeft: false, turnRight: false, strafeLeft: false, strafeRight: false, jump: false };
+      return { forward: false, back: false, turnLeft: false, turnRight: false, strafeLeft: false, strafeRight: false, jump: false, powerUp: false };
     }
     const k = this.keys;
     const held = (id: string) => this.keybinds.codesForAction(id).some((c) => k.has(c));
@@ -157,6 +157,7 @@ export class Input {
     const turnLeft = !mouselook && aHeld;
     const turnRight = !mouselook && dHeld;
     const jump = held('jump');
-    return { forward, back, turnLeft, turnRight, strafeLeft, strafeRight, jump };
+    const powerUp = held('powerUp');
+    return { forward, back, turnLeft, turnRight, strafeLeft, strafeRight, jump, powerUp };
   }
 }
