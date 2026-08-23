@@ -387,6 +387,11 @@ export class Renderer {
       case 'kiBlastFired':
         if (ev.targetId) this.vfx.projectile(ev.sourceId, ev.targetId, 'ki');
         break;
+
+      case 'yutaponDestruction':
+        this.vfx.burst(new THREE.Vector3(ev.pos.x, ev.pos.y + 1, ev.pos.z), 'physical', 50, 3.0);
+        break;
+
       case 'heal2':
         if (ev.amount > 0 || ev.crit) this.vfx.healGlow(ev.targetId);
         break;
@@ -802,6 +807,10 @@ export class Renderer {
       if (!v.visual) continue;
 
       // swimming pose: prone at the surface (derived here — the sim is unaware)
+      if (!e.dead && (e.poweringUp || e.kiPrimed)) {
+        this.vfx.castSparkle(e.id, 'ki', dt);
+      }
+
       const swimming = !e.dead
         && groundHeight(e.pos.x, e.pos.z, this.sim.cfg.seed) < WATER_LEVEL - 0.8
         && e.pos.y <= WATER_LEVEL - 0.5;

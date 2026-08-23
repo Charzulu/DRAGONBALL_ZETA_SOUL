@@ -32,7 +32,8 @@ export const BIND_ACTIONS: BindAction[] = [
   { id: 'turnLeft', label: 'Turn Left', category: 'Movement', kind: 'held', defaults: ['KeyA', 'ArrowLeft'] },
   { id: 'turnRight', label: 'Turn Right', category: 'Movement', kind: 'held', defaults: ['KeyD', 'ArrowRight'] },
   { id: 'strafeLeft', label: 'Strafe Left', category: 'Movement', kind: 'held', defaults: ['KeyQ'] },
-  { id: 'strafeRight', label: 'Strafe Right', category: 'Movement', kind: 'held', defaults: ['KeyE'] },
+  { id: 'strafeRight', label: 'Strafe Right', category: 'Movement', kind: 'held', defaults: [] },
+  { id: 'powerUp', label: 'Power Up', category: 'Combat', kind: 'held', defaults: ['KeyE'] },
   { id: 'jump', label: 'Jump', category: 'Movement', kind: 'held', defaults: ['Space'] },
   { id: 'autorun', label: 'Toggle Autorun', category: 'Movement', kind: 'edge', defaults: ['KeyR'] },
   // Targeting / interaction

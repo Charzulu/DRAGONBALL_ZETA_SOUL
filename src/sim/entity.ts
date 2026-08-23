@@ -10,7 +10,7 @@ function baseEntity(id: number, pos: Vec3): Entity {
     stats: { str: 0, agi: 0, sta: 0, int: 0, spi: 0, armor: 0 },
     weapon: { min: 1, max: 2, speed: 2 },
     attackPower: 0, rangedPower: 0, critChance: 0.05, dodgeChance: 0.05, moveSpeed: 7, hostile: false,
-    targetId: null, autoAttack: false, swingTimer: 0, kiPrimed: false, kiChargeStartTime: 0,
+    targetId: null, autoAttack: false, swingTimer: 0, kiPrimed: false, kiChargeStartTime: 0, poweringUp: false, powerUpTime: 0,
     inCombat: false, combatTimer: 99,
     auras: [], castingAbility: null, castRemaining: 0, castTotal: 0,
     channeling: false, channelTickTimer: 0, channelTickEvery: 0,

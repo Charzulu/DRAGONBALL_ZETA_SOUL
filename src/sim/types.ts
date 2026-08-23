@@ -397,6 +397,8 @@ export interface Entity {
   // combat
   targetId: number | null;
   kiPrimed: boolean;
+  poweringUp: boolean;
+  powerUpTime: number;
   kiChargeStartTime: number;
   autoAttack: boolean;
   swingTimer: number;
@@ -507,6 +509,8 @@ export type SimEvent = { pid?: number } & (
   // delivers it to nearby players; anchorless logs broadcast server-wide
   | { type: 'log'; text: string; color?: string; entityId?: number }
   | { type: 'kiBlastFired'; sourceId: number; targetId: number | null; chargePct: number; }
+  | { type: 'knockback'; targetId: number; direction: Vec3; force: number; }
+  | { type: 'yutaponDestruction'; pos: Vec3; }
 );
 
 export interface MoveInput {
@@ -517,6 +521,7 @@ export interface MoveInput {
   strafeLeft: boolean;
   strafeRight: boolean;
   jump: boolean;
+  powerUp?: boolean;
   fireKiBlast?: boolean;
 }
 
@@ -530,7 +535,7 @@ export interface SimConfig {
 }
 
 export function emptyMoveInput(): MoveInput {
-  return { forward: false, back: false, turnLeft: false, turnRight: false, strafeLeft: false, strafeRight: false, jump: false };
+  return { forward: false, back: false, turnLeft: false, turnRight: false, strafeLeft: false, strafeRight: false, jump: false, powerUp: false, fireKiBlast: false };
 }
 
 export function dist2d(a: Vec3, b: Vec3): number {
@@ -627,4 +632,16 @@ export interface KiBlastFiredEvent {
   sourceId: number;
   targetId: number | null;
   chargePct: number;
+}
+
+export interface KnockbackEvent {
+  type: 'knockback';
+  targetId: number;
+  direction: Vec3;
+  force: number;
+}
+
+export interface YutaponDestructionEvent {
+  type: 'yutaponDestruction';
+  pos: Vec3;
 }
