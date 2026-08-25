@@ -446,7 +446,8 @@ export interface Entity {
   xpValue: number;
   // npc
   questIds: string[];
-  vendorItems: string[];
+  vendorItems?: string[];
+  isTrainer?: boolean;
   // object (ground interactable)
   objectItemId: string | null;
   dungeonId: string | null; // set on dungeon door/exit portals

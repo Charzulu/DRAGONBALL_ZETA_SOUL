@@ -1958,19 +1958,6 @@
   <div id="nameplates"></div>
 
   <div id="ui">
-    <div id="dbz-minigame" class="window panel" style="position: absolute; display: none; z-index: 20; background: #15151f; border: 2px solid #6f5a2a; border-radius: 6px; padding: 12px; color: #e8d8a8; top: 20%; left: 50%; transform: translateX(-50%); width: 300px;">
-      <div class="panel-title"><span>DBZ Training</span><span class="x-btn" data-close>✕</span></div>
-      <div style="font-size: 13px; margin-bottom: 8px;">Train to increase your Battle Power!</div>
-      <div style="font-size: 14px; margin-bottom: 4px;">BP (Battle Power): <span id="dbz-bp" style="color: #ffd100; font-weight: bold;">1000</span></div>
-      <div style="font-size: 14px; margin-bottom: 4px;">Ki: <span id="dbz-ki" style="color: #69ccf0;">0</span> / 100</div>
-      <div style="font-size: 14px; margin-bottom: 12px;">Energy: <span id="dbz-energy" style="color: #abd473;">100</span> / 100</div>
-      <div style="display: flex; gap: 8px; justify-content: center;">
-        <button id="dbz-btn-charge" class="btn" style="margin-top: 0; padding: 4px 8px;">Charge Ki</button>
-        <button id="dbz-btn-blast" class="btn" style="margin-top: 0; padding: 4px 8px;">Ki Blast</button>
-        <button id="dbz-btn-rest" class="btn" style="margin-top: 0; padding: 4px 8px;">Rest</button>
-      </div>
-    </div>
-
     <div id="player-frame" class="unitframe">
       <div class="portrait-wrap">
         <div class="portrait"><canvas id="pf-portrait" width="54" height="54"></canvas></div>
@@ -2071,6 +2058,7 @@
     </div>
 
     <div id="quest-dialog" class="window panel"></div>
+    <div id="minigame-window" class="window panel" style="display:none; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 400px; text-align: center;"></div>
     <div id="loot-window" class="window panel"></div>
     <div id="bags" class="window panel"></div>
     <div id="char-window" class="window panel"></div>

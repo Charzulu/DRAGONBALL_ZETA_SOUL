@@ -117,11 +117,7 @@ async function startGame(world: IWorld, offlineSim: Sim | null, online: ClientWo
     e.stopPropagation();
     if (e.key === 'Enter') {
       const text = chatInput.value.trim();
-      if (text === '/dbz') {
-        hud.toggleDbzMinigame();
-      } else if (text) {
-        world.chat(text);
-      }
+      if (text) world.chat(text);
       chatInput.value = '';
       chatInput.style.display = 'none';
       chatInput.blur();

@@ -145,6 +145,13 @@ export const ZONE1_MOBS: Record<string, MobTemplate> = {
 // ---------------------------------------------------------------------------
 
 export const ZONE1_NPCS: Record<string, NpcDef> = {
+  kami_trainer: {
+    id: 'kami_trainer', name: 'Kami', title: 'Martial Arts Master',
+    pos: { x: -3, z: 0 }, facing: 0, color: 0x48c9b0,
+    questIds: [],
+    greeting: 'Welcome, warrior. Ready to push beyond your limits? Enter the Gravity Chamber if you dare.',
+    isTrainer: true,
+  },
   marshal_redbrook: {
     id: 'marshal_redbrook', name: 'Marshal Redbrook', title: 'Town Marshal',
     pos: { x: 4, z: 6 }, facing: Math.PI, color: 0xb7950b,
