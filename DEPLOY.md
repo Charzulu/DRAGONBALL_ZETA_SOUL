@@ -1,4 +1,4 @@
-# Deploying World of Claudecraft on AWS
+# Deploying Dragon Ball Zeta Soul on AWS
 
 > **Levy Street production** is deployed via Ansible, not this document:
 > the `eastbrook_game` role in the internal `ansible-scripts` repo runs
@@ -14,7 +14,7 @@ One EC2 instance runs everything: the game server, Postgres, and Caddy
 ## 1. Confirm the repo is public
 
 The standalone first-boot script clones
-`https://github.com/levy-street/world-of-claudecraft.git` anonymously. If you
+`https://github.com/levy-street/dragon-ball-zeta-soul.git` anonymously. If you
 are deploying a private fork instead, use a deploy key or another secret
 manager-specific flow; do not paste long-lived personal access tokens into EC2
 user data.

@@ -7,6 +7,7 @@ import { Hud } from './ui/hud';
 import { audio } from './game/audio';
 import { music } from './game/music';
 import { handlePickedEntity } from './game/interactions';
+import { minigame } from './ui/minigame';
 import { Api, ClientWorld, CharacterSummary } from './net/online';
 import type { IWorld } from './world_api';
 import { assetsReady } from './render/assets/preload';
@@ -17,7 +18,7 @@ import { CLASSES, ABILITIES } from './sim/content/classes';
 import { iconDataUrl } from './ui/icons';
 
 
-const WORLD_SEED = 20061; // fixed: World of Claudecraft is a persistent place
+const WORLD_SEED = 20061; // fixed: Dragon Ball Zeta Soul is a persistent place
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string): T => document.querySelector(sel) as T;
 
@@ -201,7 +202,14 @@ async function startGame(world: IWorld, offlineSim: Sim | null, online: ClientWo
       const obj = world.entities.get(bestObj)!;
       if (obj.templateId === 'dungeon_door' && obj.dungeonId) { world.enterDungeon(obj.dungeonId); return; }
       if (obj.templateId === 'dungeon_exit') { world.leaveDungeon(); return; }
-      world.pickUpObject(bestObj);
+      if (obj.lootable && !minigame.isActive) {
+        minigame.start((success) => {
+          if (success) world.pickUpObject(bestObj!);
+          else hud.showError('Ki charge failed!');
+        });
+      } else if (!obj.lootable) {
+        world.pickUpObject(bestObj);
+      }
       return;
     }
     if (bestNpc !== null) { hud.openQuestDialog(bestNpc); return; }
