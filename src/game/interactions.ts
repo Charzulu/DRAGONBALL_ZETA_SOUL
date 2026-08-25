@@ -1,5 +1,6 @@
 import { INTERACT_RANGE, dist2d } from '../sim/types';
 import type { IWorld } from '../world_api';
+import { minigame } from '../ui/minigame';
 
 export interface PickInteractionWorld {
   player: IWorld['player'];
@@ -39,7 +40,14 @@ export function handlePickedEntity(
       if (d > INTERACT_RANGE + 1) { hud.showError('Too far away.'); return; }
       if (e.templateId === 'dungeon_door' && e.dungeonId) world.enterDungeon(e.dungeonId);
       else if (e.templateId === 'dungeon_exit') world.leaveDungeon();
-      else world.pickUpObject(id);
+      else if (e.lootable && !minigame.isActive) {
+        minigame.start((success) => {
+          if (success) world.pickUpObject(id);
+          else hud.showError('Ki charge failed!');
+        });
+      } else if (!e.lootable) {
+        world.pickUpObject(id);
+      }
     } else if (e.kind === 'mob' && e.dead && e.lootable) {
       if (d <= INTERACT_RANGE + 1) hud.openLoot(id, screenX, screenY);
       else hud.showError('Too far away.');
@@ -56,7 +64,14 @@ export function handlePickedEntity(
       if (d > INTERACT_RANGE + 1) return;
       if (e.templateId === 'dungeon_door' && e.dungeonId) world.enterDungeon(e.dungeonId);
       else if (e.templateId === 'dungeon_exit') world.leaveDungeon();
-      else world.pickUpObject(id);
+      else if (e.lootable && !minigame.isActive) {
+        minigame.start((success) => {
+          if (success) world.pickUpObject(id);
+          else hud.showError('Ki charge failed!');
+        });
+      } else if (!e.lootable) {
+        world.pickUpObject(id);
+      }
     } else if (e.kind === 'mob' && e.dead && e.lootable) {
       const d = dist2d(world.player.pos, e.pos);
       if (d <= INTERACT_RANGE + 1) hud.openLoot(id, screenX, screenY);
