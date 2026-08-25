@@ -100,6 +100,11 @@ export class Hud {
 
   private meters: Meters;
 
+  // DBZ Minigame state
+  private dbzKi = 0;
+  private dbzEnergy = 100;
+  private dbzBp = 1000;
+
   constructor(private sim: IWorld, private renderer: Renderer, private keybinds: Keybinds) {
     this.ignoredChatNames = this.loadIgnoredChatNames();
     this.meters = new Meters(sim);
@@ -141,6 +146,66 @@ export class Hud {
     this.showBanner(startZone.name);
     this.log(`Welcome to ${startZone.name}!`, '#ffd100');
     this.log(startZone.welcome, '#ffd100');
+
+    this.initDbzMinigame();
+  }
+
+  private initDbzMinigame(): void {
+    const chargeBtn = $('#dbz-btn-charge');
+    const blastBtn = $('#dbz-btn-blast');
+    const restBtn = $('#dbz-btn-rest');
+    $('#dbz-minigame [data-close]')?.addEventListener('click', () => {
+      $('#dbz-minigame').style.display = 'none';
+    });
+
+    chargeBtn?.addEventListener('click', () => {
+      if (this.dbzEnergy >= 10 && this.dbzKi < 100) {
+        this.dbzEnergy = Math.max(0, this.dbzEnergy - 10);
+        this.dbzKi = Math.min(100, this.dbzKi + 20);
+        this.updateDbzUI();
+        audio.castStart();
+      } else if (this.dbzEnergy < 10) {
+        this.showError('Not enough energy to charge!');
+      }
+    });
+
+    blastBtn?.addEventListener('click', () => {
+      if (this.dbzKi >= 25) {
+        this.dbzKi = Math.max(0, this.dbzKi - 25);
+        this.dbzBp += Math.floor(Math.random() * 50) + 10;
+        this.updateDbzUI();
+        audio.fire();
+      } else {
+        this.showError('Not enough Ki! Charge up first.');
+      }
+    });
+
+    restBtn?.addEventListener('click', () => {
+      if (this.dbzEnergy < 100) {
+        this.dbzEnergy = Math.min(100, this.dbzEnergy + 30);
+        this.updateDbzUI();
+        audio.levelUp(); // Just a satisfying sound
+      }
+    });
+  }
+
+  private updateDbzUI(): void {
+    const elBp = $('#dbz-bp');
+    const elKi = $('#dbz-ki');
+    const elEnergy = $('#dbz-energy');
+    if (elBp) elBp.textContent = String(this.dbzBp);
+    if (elKi) elKi.textContent = String(this.dbzKi);
+    if (elEnergy) elEnergy.textContent = String(this.dbzEnergy);
+  }
+
+  toggleDbzMinigame(): void {
+    const el = $('#dbz-minigame');
+    if (el.style.display === 'block') {
+      el.style.display = 'none';
+      return;
+    }
+    this.updateDbzUI();
+    el.style.display = 'block';
   }
 
   private bindLogTabs(): void {
@@ -2442,7 +2507,7 @@ export class Hud {
       this.sim.tradeCancel();
       closed = true;
     }
-    for (const id of ['#quest-dialog', '#loot-window', '#vendor-window', '#bags', '#char-window', '#spellbook', '#quest-log-window', '#map-window', '#report-window']) {
+    for (const id of ['#quest-dialog', '#loot-window', '#vendor-window', '#bags', '#char-window', '#spellbook', '#quest-log-window', '#map-window', '#report-window', '#dbz-minigame']) {
       const el = $(id);
       if (el.style.display === 'block') {
         el.style.display = 'none';
