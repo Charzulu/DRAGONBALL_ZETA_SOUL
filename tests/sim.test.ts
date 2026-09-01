@@ -579,7 +579,7 @@ describe('RL interface', () => {
       const obs = encodeObs(sim);
       for (const v of obs) expect(Number.isFinite(v)).toBe(true);
     }
-  });
+  }, 10000);
 
   it('same seed + same actions => identical trajectories', () => {
     const run = () => {

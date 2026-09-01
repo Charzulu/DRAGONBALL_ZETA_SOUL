@@ -133,6 +133,7 @@ export interface PlayerMeta {
   questsDone: Set<string>;
   counters: RewardCounters;
   autoEquip: boolean;
+  dbzState: { active: boolean; bp: number; ki: number; energy: number; maxKi: number; maxEnergy: number; };
 }
 
 // Persistable character state (stored as JSONB server-side).
@@ -148,6 +149,7 @@ export interface CharacterState {
   inventory: InvSlot[];
   questLog: { questId: string; counts: number[]; state: 'active' | 'ready' | 'done' }[];
   questsDone: string[];
+  dbzState?: { active: boolean; bp: number; ki: number; energy: number; maxKi: number; maxEnergy: number; };
 }
 
 // Pure quest-state computation, shared by the sim and the network client.
@@ -333,6 +335,7 @@ export class Sim {
       questsDone: new Set(),
       counters: freshCounters(),
       autoEquip: opts?.autoEquip ?? false,
+      dbzState: opts?.state?.dbzState ?? { active: false, bp: 10, ki: 0, energy: 100, maxKi: 100, maxEnergy: 100 },
     };
     this.players.set(player.id, meta);
     if (this.primaryId === -1) this.primaryId = player.id;
@@ -422,6 +425,7 @@ export class Sim {
       inventory: meta.inventory.map((i) => ({ ...i })),
       questLog: [...meta.questLog.values()].map((q) => ({ questId: q.questId, counts: [...q.counts], state: q.state })),
       questsDone: [...meta.questsDone],
+      dbzState: { ...meta.dbzState },
     };
   }
 
@@ -3000,6 +3004,50 @@ export class Sim {
     if (!raw) return null;
     if (!this.chatAllowed(r.meta.entityId)) {
       this.error(r.meta.entityId, 'You are sending messages too quickly.');
+      return null;
+    }
+
+    // DBZ Mini-game
+    if (raw.startsWith('/dbz')) {
+      const parts = raw.split(/\s+/);
+      const cmd = parts[1]?.toLowerCase();
+
+      if (!cmd) {
+        r.meta.dbzState.active = !r.meta.dbzState.active;
+        const msg = r.meta.dbzState.active
+          ? `DBZ mode activated. BP: ${r.meta.dbzState.bp}, Ki: ${r.meta.dbzState.ki}, Energy: ${r.meta.dbzState.energy}`
+          : 'DBZ mode deactivated.';
+        this.error(r.meta.entityId, msg);
+        return null;
+      }
+
+      if (!r.meta.dbzState.active) {
+        this.error(r.meta.entityId, 'You must activate DBZ mode first with /dbz.');
+        return null;
+      }
+
+      if (cmd === 'charge') {
+        if (r.meta.dbzState.energy < 10) {
+          this.error(r.meta.entityId, 'Not enough Energy to charge Ki.');
+        } else {
+          r.meta.dbzState.energy -= 10;
+          r.meta.dbzState.ki = Math.min(r.meta.dbzState.maxKi, r.meta.dbzState.ki + 10);
+          this.error(r.meta.entityId, `You charge up! Ki: ${r.meta.dbzState.ki}, Energy: ${r.meta.dbzState.energy}`);
+        }
+      } else if (cmd === 'blast') {
+        if (r.meta.dbzState.ki < 20) {
+          this.error(r.meta.entityId, 'Not enough Ki to fire a blast.');
+        } else {
+          r.meta.dbzState.ki -= 20;
+          this.error(r.meta.entityId, 'You fire a Ki blast!');
+        }
+      } else if (cmd === 'rest') {
+        r.meta.dbzState.energy = Math.min(r.meta.dbzState.maxEnergy, r.meta.dbzState.energy + 20);
+        this.error(r.meta.entityId, `You rest and recover energy. Energy: ${r.meta.dbzState.energy}`);
+      } else {
+        this.error(r.meta.entityId, `Unknown DBZ command: ${cmd}. Try /dbz charge, blast, or rest.`);
+      }
+
       return null;
     }
 
