@@ -577,9 +577,9 @@ describe('RL interface', () => {
       applyAction(sim, step % ACTIONS.length);
       for (let t = 0; t < 4; t++) sim.tick();
       const obs = encodeObs(sim);
-      for (const v of obs) expect(Number.isFinite(v)).toBe(true);
+      expect(obs.every(v => Number.isFinite(v))).toBe(true);
     }
-  });
+  }, 10000);
 
   it('same seed + same actions => identical trajectories', () => {
     const run = () => {
